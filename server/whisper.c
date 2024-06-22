@@ -39,10 +39,11 @@ void whisper(t_connected *client, char *text) {
 	}
 
 	pthread_mutex_lock(client->mutex_list->map);
-	for (int i = 1; target[i]; i++) {
+	for (int i = 0; target[i]; i++) {
 		for (int j = 0; j < MAX_CLNT; j++) {
 			if (list[j].key != NULL && strcmp(list[j].key, target[i]) == 0) {
-				target_sock[i - 1] = list[j].value;
+				printf("WHISPER :: TARGET %s FOUND\n", target[i]);
+				target_sock[i] = list[j].value;
 			}
 		}
 	}

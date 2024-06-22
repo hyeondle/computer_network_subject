@@ -35,6 +35,12 @@ t_server *init_server(char **argv) {
 		exit(1);
 	}
 
+	server->list = (t_map *)malloc(sizeof(t_map) * MAX_CLNT);
+	if (!server->list) {
+		perror("malloc");
+		exit(1);
+	}
+
 	server->serv_sock = socket(PF_INET, SOCK_STREAM, 0);
 	if (server->serv_sock == -1) {
 		perror("socket");

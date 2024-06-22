@@ -41,7 +41,7 @@ typedef struct s_server {
     int clnt_socks[MAX_CLNT];
     int clnt_addr_size;
 
-    t_map list[MAX_CLNT];
+    t_map *list;
 }   t_server;
 
 typedef struct s_mutex_list {

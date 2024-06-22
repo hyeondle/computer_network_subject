@@ -19,11 +19,17 @@ void *handle_clnt(void *arg) {
 	write(sock, "SERVER :: Connect\n", 19);
 	read(sock, client->name, 20);
 	while (dup_check(client) == -1) {
+		memset(client->name, 0, 20);
 		read(sock, client->name, 20);
 	}
 	sprintf(msg, "SERVER :: Welcome, %s\n", client->name);
 	write(sock, msg, strlen(msg));
-	write(sock, "0", 1);
+	memset(msg, 0, BUF_SIZE);
+	sprintf(msg, "0\n");
+	write(sock, msg, strlen(msg));
+	printf("sended : %s\n", msg);
+	memset(msg, 0, BUF_SIZE);
+	read(sock, msg, BUF_SIZE-1);
 
 	add_name_list(client);
 
@@ -62,10 +68,9 @@ void *handle_clnt(void *arg) {
 			break;
 		}
 	}
-	client->server->clnt_cnt--;
 	pthread_mutex_unlock(client->mutex_list->s_a);
 
-	printf("Disconnected :: client %d's name: %s\n", client_cnt, client->name);
+	printf("Disconnected :: client %d's name: %s\n", client->clnt_cnt, client->name);
 	close(sock);
 	free(client->t_id);
 	free(client);
