@@ -12,6 +12,20 @@
 # define BUF_SIZE 1024
 # define MAX_CLNT 256
 
+typedef enum e_order {
+    EXIT = 0,
+    LOBBY,
+    HELP,
+    WHISPER,
+    ROOM,
+    CREATE,
+    JOIN,
+    LEAVE,
+    LIST,
+    WALL,
+    GAME
+}   t_order;
+
 typedef struct s_map {
     char *key;
     int value;
@@ -62,10 +76,20 @@ void run_server(t_server *server, t_mutex_list *mutex_list);
 void *handle_clnt(void *arg);
 
 //
+// operations
+//
+void whisper(t_connected *client, char *text);
+
+//
 // utils.c
 //
+int parser(char *msg, char **text);
+int find_order(char *order);
 void add_name_list(t_connected *client);
 void delete_name_list(t_connected *client);
-void send_all(t_connected *client);
+int dup_check(t_connected *client);
+void send_all(t_connected *client, char *msg);
+void send_all_j(t_connected *client);
+char **ft_split(char *s, char c);
 
 #endif
