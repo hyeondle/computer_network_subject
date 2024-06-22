@@ -95,7 +95,7 @@ int dup_check(t_connected *client) {
 		if (strcmp(list[i].key, client->name) == 0) {
 			sprintf(buf, "SERVER :: The name is already in use.\n");
 			write(client->clnt_sock, buf, strlen(buf));
-			write(client->clnt_sock, "1", 1);
+			write(client->clnt_sock, "1\n", 2);
 			pthread_mutex_unlock(client->mutex_list->map);
 			return -1;
 		}
@@ -108,17 +108,20 @@ int dup_check(t_connected *client) {
 void add_name_list(t_connected *client) {
 	t_map *list;
 
-	dup_check(client);
 	list = client->server->list;
 	pthread_mutex_lock(client->mutex_list->map);
+	printf("mutex on\n");
 	for (int i = 0; i < MAX_CLNT; i++) {
 		if (list[i].key == NULL) {
+			printf("ADD_NAME_LIST :: %s, %d\n", client->name, client->clnt_sock);
 			list[i].key = strdup(client->name);
 			list[i].value = client->clnt_sock;
+			pthread_mutex_unlock(client->mutex_list->map);
 			break;
 		}
 	}
 	pthread_mutex_unlock(client->mutex_list->map);
+	printf("mutex off\n");
 }
 
 void delete_name_list(t_connected *client) {

@@ -38,7 +38,40 @@ int main(int argc, char *argv[])
     if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr))==-1)
         error_handling("connect() error");
 
-    send(sock, name, strlen(name), 0);
+    memset(msg, 0, BUF_SIZE);
+
+    read(sock, msg, BUF_SIZE-1);
+    msg[strcspn(msg, "\n")] = '\0';
+    printf("%s\n", msg);
+    memset(msg, 0, BUF_SIZE);
+    printf("\n");
+    write(sock, name, strlen(name));
+    read(sock, msg, BUF_SIZE-1);
+    msg[strcspn(msg, "\n")] = '\0';
+    printf("%s\n", msg);
+    memset(msg, 0, BUF_SIZE);
+    printf("\n");
+    read(sock, msg, BUF_SIZE-1);
+    msg[strcspn(msg, "\n")] = '\0';
+    printf("n:%s\n", msg);
+    printf("%d\n", strcmp(msg, "0"));
+    printf("\n");
+    // memset(msg, 0, BUF_SIZE);
+
+    while (strcmp(msg, "0\n") != 0) {
+        memset(msg, 0, BUF_SIZE);
+        write(1, "Name already exists. Please enter a new name\n", 45);
+        read(STDIN_FILENO, name, NAME_SIZE);
+        name[strcspn(name, "\n")] = '\0';
+        write(sock, name, strlen(name));
+        read(sock, msg, BUF_SIZE-1);
+        printf("%s\n", msg);
+        read(sock, msg, BUF_SIZE-1);
+        memset(msg, 0, BUF_SIZE);
+    }
+    memset(msg, 0, BUF_SIZE);
+    write(sock, name, strlen(name));
+    printf("Connected to server\n");
     pthread_create(&snd_thread, NULL, send_msg, (void*)&sock);
     pthread_create(&rcv_thread, NULL, recv_msg, (void*)&sock);
     pthread_join(snd_thread, &thread_return);
