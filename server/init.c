@@ -14,6 +14,13 @@ t_mutex_list *init_mutex() {
 		perror("malloc");
 		exit(1);
 	}
+
+	mutex_list->map = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+	if (!mutex_list->map) {
+		perror("malloc");
+		exit(1);
+	}
+
 	pthread_mutex_init(mutex_list->s_a, NULL);
 
 	return mutex_list;

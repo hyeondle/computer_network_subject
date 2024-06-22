@@ -32,6 +32,7 @@ typedef struct s_server {
 
 typedef struct s_mutex_list {
     pthread_mutex_t *s_a;
+    pthread_mutex_t *map;
 }   t_mutex_list;
 
 typedef struct s_connected {
@@ -60,5 +61,11 @@ void run_server(t_server *server, t_mutex_list *mutex_list);
 //
 void *handle_clnt(void *arg);
 
+//
+// utils.c
+//
+void add_name_list(t_connected *client);
+void delete_name_list(t_connected *client);
+void send_all(t_connected *client);
 
 #endif
