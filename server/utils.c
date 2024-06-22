@@ -1,8 +1,114 @@
 #include "server.h"
 
+int find_order(char *order) {
+	if (strcmp(order, "EXIT") == 0) {
+        return EXIT;
+    } else if (strcmp(order, "LOBBY") == 0) {
+        return LOBBY;
+    } else if (strcmp(order, "HELP") == 0) {
+        return HELP;
+    } else if (strcmp(order, "WHISPER") == 0) {
+        return WHISPER;
+    } else if (strcmp(order, "ROOM") == 0) {
+        return ROOM;
+    } else if (strcmp(order, "CREATE") == 0) {
+        return CREATE;
+    } else if (strcmp(order, "JOIN") == 0) {
+        return JOIN;
+    } else if (strcmp(order, "LEAVE") == 0) {
+        return LEAVE;
+    } else if (strcmp(order, "LIST") == 0) {
+        return LIST;
+    } else if (strcmp(order, "WALL") == 0) {
+        return WALL;
+    } else if (strcmp(order, "GAME") == 0) {
+        return GAME;
+    } else {
+        return -1;
+    }
+}
+
+int parser(char *msg, char **text) {
+	char **tokenized;
+	char *temp;
+	int return_value;
+	int str_len = 0;
+
+	tokenized = ft_split(msg, ':');
+	return_value = find_order(tokenized[0]);
+
+	if (return_value == -1) {
+		printf("PARSER :: Invalid order\n");
+		if (tokenized) {
+			for (int i = 0; tokenized[i]; i++) {
+				tokenized[i] = NULL;
+				free(tokenized[i]);
+			}
+			tokenized = NULL;
+			free(tokenized);
+		}
+		memset(msg, 0, BUF_SIZE);
+		text = NULL;
+		return -1;
+	}
+
+	for (int i = 1; tokenized[i]; i++) {
+		str_len += strlen(tokenized[i]);
+		str_len++;
+	}
+
+	temp = (char *)malloc(sizeof(char) * (str_len));
+	if (!temp)
+		printf("PARSER :: malloc error\n");
+
+	temp[0] = '\0';
+
+	for (int i = 1; tokenized[i]; i++) {
+		strcat(temp, tokenized[i]);
+		if (tokenized[i + 1]) {
+			strcat(temp, ":");
+		}
+	}
+
+	*text = temp;
+
+	for (int i = 0; tokenized[i]; i++) {
+		tokenized[i] = NULL;
+		free(tokenized[i]);
+	}
+	tokenized = NULL;
+	free(tokenized);
+
+	memset(msg, 0, BUF_SIZE);
+	return return_value;
+}
+
+int dup_check(t_connected *client) {
+	t_map *list;
+	char buf[BUF_SIZE];
+
+	list = client->server->list;
+	pthread_mutex_lock(client->mutex_list->map);
+	for (int i = 0; i < MAX_CLNT; i++) {
+		if  (list[i].key == NULL)
+			continue;
+		if (strcmp(list[i].key, client->name) == 0) {
+			sprintf(buf, "SERVER :: The name is already in use.\n");
+			write(client->clnt_sock, buf, strlen(buf));
+			write(client->clnt_sock, "1", 1);
+			pthread_mutex_unlock(client->mutex_list->map);
+			return -1;
+		}
+	}
+	pthread_mutex_unlock(client->mutex_list->map);
+
+	return 0;
+}
+
 void add_name_list(t_connected *client) {
 	t_map *list;
 
+	dup_check(client);
 	list = client->server->list;
 	pthread_mutex_lock(client->mutex_list->map);
 	for (int i = 0; i < MAX_CLNT; i++) {
@@ -34,7 +140,7 @@ void delete_name_list(t_connected *client) {
 	pthread_mutex_unlock(client->mutex_list->map);
 }
 
-void send_all(t_connected *client) {
+void send_all_j(t_connected *client) {
 	char buf[BUF_SIZE];
 
 	sprintf(buf, "LOBBY : %s entered in the server\n", client->name);
@@ -43,4 +149,120 @@ void send_all(t_connected *client) {
 		write(client->server->clnt_socks[i], buf, strlen(buf));
 	}
 	pthread_mutex_unlock(client->mutex_list->s_a);
+}
+
+void send_all(t_connected *client, char *msg) {
+	char buf[BUF_SIZE];
+
+	sprintf(buf, "%s : %s\n", client->name, msg);
+	pthread_mutex_lock(client->mutex_list->s_a);
+	for (int i = 0; i < client->server->clnt_cnt; i++) {
+		write(client->server->clnt_socks[i], buf, strlen(buf));
+	}
+	pthread_mutex_unlock(client->mutex_list->s_a);
+}
+
+// split
+static int str_len_s(char *str, char c)
+{
+	int i;
+
+	i = 0;
+	while (str[i] && str[i] != c) {
+		i++;
+	}
+	return i;
+}
+
+static size_t tab_size(char *s, char c)
+{
+	size_t i;
+	size_t k;
+
+	i = 0;
+	k = 0;
+	if (s[k] == c)
+		if (s[k + 1] != c)
+			k++;
+	while (s[k])
+	{
+		if (s[k] == c)
+		{
+			while (s[k + 1] == c)
+				k++;
+			if (s[k + 1] != '\0' && s[k + 1] != c)
+				i++;
+		}
+		k++;
+	}
+	return (i + 1);
+}
+
+static char *put_word(char *str, char set, size_t c, char **tab)
+{
+	size_t i;
+	size_t size;
+	char *word;
+
+	i = 0;
+	size = (size_t)str_len_s(str, set);
+	word = (char *)malloc(sizeof(char) * (size + 1));
+	if (!word)
+	{
+		while (i < c)
+		{
+			free(tab[i]);
+			tab[i] = NULL;
+			i++;
+		}
+		free(tab);
+		return NULL;
+	}
+	while (i < size)
+	{
+		word[i] = str[i];
+		i++;
+	}
+	word[i] = '\0';
+	return word;
+}
+
+static char **do_split(char **tab, char *temp, char c)
+{
+	size_t i;
+
+	i = 0;
+	while (*temp)
+	{
+		while (*temp && *temp == c)
+			temp++;
+		if (*temp != 0)
+		{
+			tab[i] = put_word(temp, c, i, tab);
+			if (tab[i] == NULL)
+				return (NULL);
+			i++;
+		}
+		while (*temp && !(*temp == c))
+			temp++;
+	}
+	tab[i] = NULL;
+	return (tab);
+}
+
+char **ft_split(char *s, char c)
+{
+	size_t i;
+	char **tab;
+	char *temp;
+
+	if (!s)
+		return NULL;
+	temp = (char *)s;
+	i = 0;
+	tab = (char **)malloc(sizeof(char *) * (tab_size(temp, c) + 1));
+	if (!tab)
+		return NULL;
+	tab = do_split(tab, temp, c);
+	return (tab);
 }
