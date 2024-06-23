@@ -93,15 +93,18 @@ int dup_check(t_connected *client) {
 		if  (list[i].key == NULL)
 			continue;
 		if (strcmp(list[i].key, client->name) == 0) {
+			printf("dup occured\n");
 			sprintf(buf, "SERVER :: The name is already in use.\n");
 			write(client->clnt_sock, buf, strlen(buf));
-			write(client->clnt_sock, "1\n", 2);
+			memset(buf, 0, BUF_SIZE);
+			sprintf(buf, "CONNECT FAIL\n");
+			write(client->clnt_sock, buf, strlen(buf));
+			memset(buf, 0, BUF_SIZE);
 			pthread_mutex_unlock(client->mutex_list->map);
 			return -1;
 		}
 	}
 	pthread_mutex_unlock(client->mutex_list->map);
-
 	return 0;
 }
 
