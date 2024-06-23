@@ -1,4 +1,5 @@
 #include "server.h"
+#include <netinet/tcp.h>
 
 t_mutex_list *init_mutex() {
 	t_mutex_list *mutex_list;
@@ -46,6 +47,9 @@ t_server *init_server(char **argv) {
 		perror("socket");
 		exit(1);
 	}
+
+	int flag = 1;
+	setsockopt(server->serv_sock, IPPROTO_TCP, TCP_NODELAY, (void *)&flag, sizeof(int));
 
 	memset(&server->serv_addr, 0, sizeof(server->serv_addr));
 	server->serv_addr.sin_family = AF_INET;
