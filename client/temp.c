@@ -1,14 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <pthread.h>
-#include <netinet/tcp.h>
-
-#define BUF_SIZE 100
-#define NAME_SIZE 20
+#include "client.h"
 
 void * send_msg(void * arg);
 void * recv_msg(void * arg);
@@ -74,14 +64,74 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+int find_order(char *order) {
+    if (strcmp(order, "/?") == 0) {
+        return HELP;
+    } else if (strcmp(order, "/w") == 0) {
+        return WHISPER;
+    } else if (strcmp(order, "/l") == 0) {
+        return LOBBY;
+    } else if (strcmp(order, "/r") == 0) {
+        return ROOM;
+    } else if (strcmp(order, "/a") == 0) {
+        return WALL;
+    } else if (strcmp(order, "/g") == 0) {
+        return GAME;
+    } else {
+        return -1;
+    }
+}
+
+char *parse_input(char *msg) {
+    char *text;
+    char **tokenized;
+    int order = 0;
+
+    tokenized = ft_split(msg, ' ');
+
+    if (!tokenized) {
+        printf("PARSER :: split error\n");
+        return NULL;
+    }
+
+    if (strcmp(tokenized[0][0], '/') != 0) {
+        for (int i = 0; tokenized[i]; i++) {
+            tokenized[i] = NULL;
+            free(tokenized[i]);
+        }
+        tokenized = NULL;
+        free(tokenized);
+        return msg;
+        // i think i should use strdup to return the string
+    }
+
+    order = find_order(tokenized[0]);
+
+    if (order == -1) {
+        printf("PARSER :: Invalid order\n");
+        for (int i = 0; tokenized[i]; i++) {
+            tokenized[i] = NULL;
+            free(tokenized[i]);
+        }
+        tokenized = NULL;
+        free(tokenized);
+        return msg;
+    }
+
+}
+
+
 void * send_msg(void * arg)   // send thread main
 {
     char msg[BUF_SIZE];
     int sock=*((int*)arg);
     char name_msg[BUF_SIZE];
+    char *text;
+
     while(1)
     {
         fgets(msg, BUF_SIZE, stdin);
+        text = parse_input(msg);
         if(!strcmp(msg,"q\n")||!strcmp(msg,"Q\n"))
         {
             close(sock);
