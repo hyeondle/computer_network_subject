@@ -3,7 +3,7 @@
 void whisper(t_connected *client, char *text) {
 	t_map *list;
 	int client_cnt = 0;
-	char *name;
+	// char *name;
 	char msg[BUF_SIZE];
 	char **tokenized;
 	char **target;
@@ -49,10 +49,10 @@ void whisper(t_connected *client, char *text) {
 	}
 	pthread_mutex_unlock(client->mutex_list->map);
 
-	if (!target_sock[0]) {
+	if (!target_sock[0]) {	// if there is no target
 		printf("WHISPER :: NO TARGET\n");
 		sprintf(msg, "SERVER :: No target to whisper\n");
-		write(client->clnt_sock, msg, strlen(msg));
+		write(client->clnt_sock, msg, strlen(msg)); // send error message to client
 		return;
 	}
 
@@ -75,7 +75,7 @@ void whisper(t_connected *client, char *text) {
 	}
 	temp[str_len] = '\0';
 
-	sprintf(msg, "%s : %s\n", client->name, temp);
+	sprintf(msg, "\033[33m%s : %s\033[0m\n", client->name, temp); // whisper message will be colored message
 	for (int i = 0; target_sock[i]; i++) {
 		write(target_sock[i], msg, strlen(msg));
 	}
