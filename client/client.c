@@ -34,8 +34,8 @@ int main(int argc, char *argv[])
     if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr))==-1)
         error_handling("connect() error");
 
-    int flag = 1;
-	setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&flag, sizeof(int));
+    // int flag = 1;
+	// setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&flag, sizeof(int));
 
     memset(msg, 0, BUF_SIZE);
 
@@ -82,6 +82,65 @@ int find_order(char *order) {
     }
 }
 
+char *make_order(char **tokenized, int order) {
+    char *text;
+    int str_len = 0;
+
+    for (int i = 1; tokenized[i]; i++) {
+        str_len += strlen(tokenized[i]);
+        str_len++;
+    }
+
+    if (order == WHISPER) {
+        text = (char *)malloc(sizeof(char) * (str_len + 1 + strlen("WHISPER:")));
+        sprintf(text, "WHISPER:");
+        for (int i = 1; tokenized[i]; i++) {
+            strcat(text, tokenized[i]);
+            strcat(text, " ");
+        }
+    } else if (order == LOBBY) {
+        text = (char *)malloc(sizeof(char) * (str_len + 1 + strlen("LOBBY:")));
+        sprintf(text, "LOBBY:");
+        for (int i = 1; tokenized[i]; i++) {
+            strcat(text, tokenized[i]);
+            strcat(text, " ");
+        }
+    } else if (order == ROOM) {
+        text = (char *)malloc(sizeof(char) * (str_len + 1 + strlen("ROOM:")));
+        sprintf(text, "ROOM:");
+        for (int i = 1; tokenized[i]; i++) {
+            strcat(text, tokenized[i]);
+            strcat(text, " ");
+        }
+    } else if (order == WALL) {
+        text = (char *)malloc(sizeof(char) * (str_len + 1 + strlen("WALL:")));
+        sprintf(text, "WALL:");
+        for (int i = 1; tokenized[i]; i++) {
+            strcat(text, tokenized[i]);
+            strcat(text, " ");
+        }
+    } else if (order == GAME) {
+        text = (char *)malloc(sizeof(char) * (str_len + 1 + strlen("GAME:")));
+        sprintf(text, "GAME:");
+        for (int i = 1; tokenized[i]; i++) {
+            strcat(text, tokenized[i]);
+            strcat(text, " ");
+        }
+    } else if (order == IGNORE) {
+        text = (char *)malloc(sizeof(char) * (str_len + 1 + strlen("IGNORE:")));
+        sprintf(text, "IGNORE:");
+        for (int i = 1; tokenized[i]; i++) {
+            strcat(text, tokenized[i]);
+            strcat(text, " ");
+        }
+    } else {
+        text = (char *)malloc(sizeof(char) * (strlen("INVALID ORDER") + 1));
+        sprintf(text, "INVALID ORDER");
+    }
+
+    return text;
+}
+
 char *parse_input(char *msg) {
     char *text;
     char **tokenized;
@@ -89,35 +148,50 @@ char *parse_input(char *msg) {
 
     tokenized = ft_split(msg, ' ');
 
+    //check if just type abcd
     if (!tokenized) {
         printf("PARSER :: split error\n");
         return NULL;
     }
 
-    if (strcmp(tokenized[0][0], '/') != 0) {
+    if (tokenized[0][0] != '/') {
         for (int i = 0; tokenized[i]; i++) {
             tokenized[i] = NULL;
             free(tokenized[i]);
         }
         tokenized = NULL;
         free(tokenized);
-        return msg;
-        // i think i should use strdup to return the string
+        text = (char *)malloc(sizeof(char) * (strlen(msg) + 1 + strlen("WALL:")));
+        sprintf(text, "WALL:%s", msg);
+        return text;
     }
 
     order = find_order(tokenized[0]);
 
     if (order == -1) {
-        printf("PARSER :: Invalid order\n");
+        // printf("PARSER :: Invalid order\n");
         for (int i = 0; tokenized[i]; i++) {
             tokenized[i] = NULL;
             free(tokenized[i]);
         }
         tokenized = NULL;
         free(tokenized);
-        return msg;
+        return strdup(msg);
+    }
+    if (!tokenized[1]) {
+        printf("PARSER :: No text\n");
+        for (int i = 0; tokenized[i]; i++) {
+            tokenized[i] = NULL;
+            free(tokenized[i]);
+        }
+        tokenized = NULL;
+        free(tokenized);
+        return strdup(msg);
     }
 
+    text = make_order(tokenized, order);
+
+    return text;
 }
 
 
@@ -137,8 +211,13 @@ void * send_msg(void * arg)   // send thread main
             close(sock);
             exit(0);
         }
-        sprintf(name_msg,"%s", msg);
-        write(sock, name_msg, strlen(name_msg));
+        if (text == NULL)
+            continue;
+        write(sock, text, strlen(text));
+        memset(msg, 0, BUF_SIZE);
+        memset(text, 0, strlen(text));
+        text = NULL;
+        free(text);
     }
     return NULL;
 }
@@ -155,7 +234,9 @@ void * recv_msg(void * arg)   // read thread main
         if(str_len==-1)
             return (void*)-1;
         name_msg[str_len]=0;
+        name_msg[strcspn(name_msg, "\n")] = '\0';
         write(1, name_msg, strlen(name_msg));
+        write(1, "\n", 1);
     }
     return NULL;
 }

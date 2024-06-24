@@ -14,6 +14,16 @@
 #define BUF_SIZE 100
 #define NAME_SIZE 20
 
+typedef enum e_order {
+	HELP,
+	WHISPER,
+	LOBBY,
+	ROOM,
+	WALL,
+	GAME,
+	IGNORE
+} t_order;
+
 char **ft_split(char *s, char c);
 
 

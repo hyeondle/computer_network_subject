@@ -23,7 +23,9 @@ int find_order(char *order) {
         return WALL;
     } else if (strcmp(order, "GAME") == 0) {
         return GAME;
-    } else {
+	} else if (strcmp(order, "IGNORE") == 0) {
+		return IGNORE;
+	} else {
         return -1;
     }
 }
@@ -113,7 +115,6 @@ void add_name_list(t_connected *client) {
 
 	list = client->server->list;
 	pthread_mutex_lock(client->mutex_list->map);
-	printf("mutex on\n");
 	for (int i = 0; i < MAX_CLNT; i++) {
 		if (list[i].key == NULL) {
 			printf("ADD_NAME_LIST :: %s, %d\n", client->name, client->clnt_sock);
@@ -124,7 +125,6 @@ void add_name_list(t_connected *client) {
 		}
 	}
 	pthread_mutex_unlock(client->mutex_list->map);
-	printf("mutex off\n");
 }
 
 void delete_name_list(t_connected *client) {
@@ -137,6 +137,7 @@ void delete_name_list(t_connected *client) {
 			continue;
 		}
 		if (strcmp(list[i].key, client->name) == 0) {
+			printf("DELETE_NAME_LIST :: %s, %d\n", client->name, client->clnt_sock);
 			free(list[i].key);
 			list[i].key = NULL;
 			list[i].value = 0;
@@ -160,6 +161,7 @@ void send_all_j(t_connected *client) {
 void send_all(t_connected *client, char *msg) {
 	char buf[BUF_SIZE];
 
+	printf("send all");
 	sprintf(buf, "%s : %s\n", client->name, msg);
 	pthread_mutex_lock(client->mutex_list->s_a);
 	for (int i = 0; i < client->server->clnt_cnt; i++) {

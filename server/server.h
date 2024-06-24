@@ -23,7 +23,8 @@ typedef enum e_order {
     LEAVE,
     LIST,
     WALL,
-    GAME
+    GAME,
+    IGNORE
 }   t_order;
 
 typedef struct s_map {
