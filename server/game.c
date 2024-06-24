@@ -2,7 +2,7 @@
 #include <netinet/tcp.h>
 #include <fcntl.h>
 
-
+/*
 void game(t_connected *client, char *text) {
 	int usr1, usr2;
 
@@ -57,7 +57,7 @@ void game(t_connected *client, char *text) {
 	int n1 = 0, n2 = 0;
 
 	while (1) {
-		usleep(100000);
+		// usleep(100000);
 		memset(buf2, 0, BUF_SIZE);
 		memset(buf3, 0, BUF_SIZE);
 		sprintf(buf2, "%d %d %d %d", ball_x, ball_y, paddle1, paddle2);
@@ -105,3 +105,4 @@ void game(t_connected *client, char *text) {
 	}
 
 }
+*/

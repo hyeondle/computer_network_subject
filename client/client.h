@@ -44,9 +44,11 @@ typedef struct s_sockinfo {
 	t_mlx *mlx;
 
 	int *loop;
+	int me;
 } t_sockinfo;
 
 char **ft_split(char *s, char c);
 void *game(void *arg);
+int game_loop(t_sockinfo *sockinfo);
 
 #endif
