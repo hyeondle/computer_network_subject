@@ -16,41 +16,40 @@ void *handle_clnt(void *arg) {
 	sock = client->clnt_sock;
 	client_cnt = client->clnt_cnt;
 
-	// int flag = 1;
-	// setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&flag, sizeof(int));
-
 	// connection, name check
 	sprintf(msg, "SERVER :: Connect\n");
 	write(sock, msg, strlen(msg));
-	memset(msg, 0, BUF_SIZE);
-	read(sock, client->name, 20);
-	while (dup_check(client) == -1) {
+	memset(msg, 0, BUF_SIZE);	//buffer clear (이후 코드에서도 버퍼를 사용 한 후에는 항상 초기화를 했습니다)
+
+	read(sock, client->name, 20); // read name
+	while (dup_check(client) == -1) {	// check if name is duplicated
 		memset(client->name, 0, 20);
 		read(sock, client->name, 20);
 	}
 	sprintf(msg, "OK\n");
-	write(sock, msg, strlen(msg));
+	write(sock, msg, strlen(msg));	// send OK to client
 	memset(msg, 0, BUF_SIZE);
-	read(sock, msg, BUF_SIZE-1);
-	printf("%s", msg);
 
-	add_name_list(client);
+	read(sock, msg, BUF_SIZE-1);	// read OK sign from client
+	printf("%s", msg);
+	memset(msg, 0, BUF_SIZE);
+
+	add_name_list(client);	// add name in map list (for whisper)
 
 	printf("Connected :: client %d's name: %s\n", client_cnt, client->name);
 
-	memset(msg, 0, BUF_SIZE);
+	send_all_j(client);	// send all clients that new client is connected
 
-	send_all_j(client);
 	// main operation
 	while(1) {
 		str_len = read(sock, msg, BUF_SIZE);
 		msg[strcspn(msg, "\n")] = '\0';
-		if (str_len == 0) {
+		if (str_len == 0) { // if client disconnected, break
 			break;
 		}
 		printf("Received :: client %d's message: %s\n", client_cnt, msg);
-		order = parser(msg, &text);
-		operate_order(client, order, text);
+		order = parser(msg, &text);	// parse the message
+		operate_order(client, order, text); // 파싱한 내용 기반으로 명령 수행
 		if (text) {
 			text = NULL;
 			free(text);
@@ -82,7 +81,7 @@ void *handle_clnt(void *arg) {
 	return 0;
 }
 
-void send_not_implemented(t_connected *client) {
+void send_not_implemented(t_connected *client) { // 구현이 안된 명령임을 알림
 	char msg[BUF_SIZE];
 
 	sprintf(msg, "SERVER :: Not implemented operation\n");

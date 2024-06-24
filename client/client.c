@@ -12,13 +12,13 @@ int main(int argc, char *argv[])
 {
     int sock;
     struct sockaddr_in serv_addr;
-    struct sockaddr_in game_addr;
+    // struct sockaddr_in game_addr;
     pthread_t snd_thread, rcv_thread;
     void * thread_return;
     t_sockinfo *sockinfo;
 
     char msg[BUF_SIZE];
-    char chk[BUF_SIZE];
+    // char chk[BUF_SIZE];
     char name[NAME_SIZE];
 
     if(argc!=4) {
@@ -48,30 +48,30 @@ int main(int argc, char *argv[])
 
     sockinfo->sock = sock;
     sockinfo->serv_addr = serv_addr;
-    sockinfo->game_started = 0;
-    sockinfo->game_sock = socket(PF_INET, SOCK_STREAM, 0);
-    sockinfo->game_mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-    if (!sockinfo->game_mutex) {
-        perror("malloc");
-        exit(1);
-    }
-    pthread_mutex_init(sockinfo->game_mutex, NULL);
+    // sockinfo->game_started = 0;
+    // sockinfo->game_sock = socket(PF_INET, SOCK_STREAM, 0);
+    // sockinfo->game_mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+    // if (!sockinfo->game_mutex) {
+    //     perror("malloc");
+    //     exit(1);
+    // }
+    // pthread_mutex_init(sockinfo->game_mutex, NULL);
 
-    memset(&game_addr, 0, sizeof(game_addr));
-    game_addr.sin_family = AF_INET;
-    game_addr.sin_addr.s_addr = inet_addr(argv[1]);
-    game_addr.sin_port = htons(atoi(argv[2]) + 1);
+    // memset(&game_addr, 0, sizeof(game_addr));
+    // game_addr.sin_family = AF_INET;
+    // game_addr.sin_addr.s_addr = inet_addr(argv[1]);
+    // game_addr.sin_port = htons(atoi(argv[2]) + 1);
 
-    sockinfo->game_addr = game_addr;
+    // sockinfo->game_addr = game_addr;
 
-    sockinfo->mlx = (t_mlx *)malloc(sizeof(t_mlx));
-    if (!sockinfo->mlx) {
-        perror("malloc");
-        exit(1);
-    }
+    // sockinfo->mlx = (t_mlx *)malloc(sizeof(t_mlx));
+    // if (!sockinfo->mlx) {
+    //     perror("malloc");
+    //     exit(1);
+    // }
 
-    int flag = 1;
-	setsockopt(sockinfo->game_sock, IPPROTO_TCP, TCP_NODELAY, (void *)&flag, sizeof(int));
+    // int flag = 1;
+	// setsockopt(sockinfo->game_sock, IPPROTO_TCP, TCP_NODELAY, (void *)&flag, sizeof(int));
 
     memset(msg, 0, BUF_SIZE);
 
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
     write(sock, name, strlen(name));
     read(sock, msg, BUF_SIZE-1);
     msg[strcspn(msg, "\n")] = '\0';
-    while (strcmp(msg, "OK") != 0) {
+    while (strcmp(msg, "OK") != 0) {    // loop until name is accepted
         memset(msg, 0, BUF_SIZE);
         write(1, "Name already exists. Please enter a new name\n", 45);
         read(STDIN_FILENO, name, NAME_SIZE);
@@ -184,7 +184,6 @@ char *parse_input(char *msg) {
 
     tokenized = ft_split(msg, ' ');
 
-    //check if just type abcd
     if (!tokenized) {
         printf("PARSER :: split error\n");
         return NULL;
@@ -202,10 +201,9 @@ char *parse_input(char *msg) {
         return text;
     }
 
-    order = find_order(tokenized[0]);
+    order = find_order(tokenized[0]); // /? /w /l /r /a /g 등, 명령어 찾기
 
     if (order == -1) {
-        // printf("PARSER :: Invalid order\n");
         for (int i = 0; tokenized[i]; i++) {
             tokenized[i] = NULL;
             free(tokenized[i]);
@@ -225,7 +223,7 @@ char *parse_input(char *msg) {
         return strdup(msg);
     }
 
-    text = make_order(tokenized, order);
+    text = make_order(tokenized, order); // add prefix to the message
 
     return text;
 }
@@ -235,13 +233,13 @@ void * send_msg(void * arg)   // send thread main
 {
     char msg[BUF_SIZE];
     int sock=*((int*)arg);
-    char name_msg[BUF_SIZE];
+    // char name_msg[BUF_SIZE];
     char *text;
 
     while(1)
     {
         fgets(msg, BUF_SIZE, stdin);
-        text = parse_input(msg);
+        text = parse_input(msg);    //parse user's input and add prefix
         if(!strcmp(msg,"q\n")||!strcmp(msg,"Q\n"))
         {
             close(sock);
@@ -260,7 +258,7 @@ void * send_msg(void * arg)   // send thread main
 
 void * recv_msg(void * arg)   // read thread main
 {
-    pthread_t game_thread;
+    // pthread_t game_thread;
     t_sockinfo *sockinfo = (t_sockinfo *)arg;
     int sock = sockinfo->sock;
     char name_msg[NAME_SIZE+BUF_SIZE];
@@ -274,24 +272,24 @@ void * recv_msg(void * arg)   // read thread main
         name_msg[strcspn(name_msg, "\n")] = '\0';
         write(1, name_msg, strlen(name_msg));
         write(1, "\n", 1);
-        if (strcmp(name_msg, "GAME START") == 0) {
-            // pthread_create(&game_thread, NULL, game, (void*)sockinfo);
-            // pthread_detach(game_thread);
-            pthread_mutex_lock(sockinfo->game_mutex);
-            sockinfo->game_started = 1;
-            pthread_mutex_unlock(sockinfo->game_mutex);
-        } else if (strcmp(name_msg, "GAME REQUEST") == 0) {
-            printf("GAME REQUEST\n");
-            // pthread_create(&game_thread, NULL, game, (void*)sockinfo);
-            // pthread_detach(game_thread);
-            pthread_mutex_lock(sockinfo->game_mutex);
-            sockinfo->game_started = 1;
-            pthread_mutex_unlock(sockinfo->game_mutex);
-        } else if (strcmp(name_msg, "GAME END") == 0) {
-            pthread_mutex_lock(sockinfo->game_mutex);
-            sockinfo->game_started = -1;
-            pthread_mutex_unlock(sockinfo->game_mutex);
-        }
+        // if (strcmp(name_msg, "GAME START") == 0) {
+        //     // pthread_create(&game_thread, NULL, game, (void*)sockinfo);
+        //     // pthread_detach(game_thread);
+        //     pthread_mutex_lock(sockinfo->game_mutex);
+        //     sockinfo->game_started = 1;
+        //     pthread_mutex_unlock(sockinfo->game_mutex);
+        // } else if (strcmp(name_msg, "GAME REQUEST") == 0) {
+        //     printf("GAME REQUEST\n");
+        //     // pthread_create(&game_thread, NULL, game, (void*)sockinfo);
+        //     // pthread_detach(game_thread);
+        //     pthread_mutex_lock(sockinfo->game_mutex);
+        //     sockinfo->game_started = 1;
+        //     pthread_mutex_unlock(sockinfo->game_mutex);
+        // } else if (strcmp(name_msg, "GAME END") == 0) {
+        //     pthread_mutex_lock(sockinfo->game_mutex);
+        //     sockinfo->game_started = -1;
+        //     pthread_mutex_unlock(sockinfo->game_mutex);
+        // }
     }
     return NULL;
 }

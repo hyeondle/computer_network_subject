@@ -175,7 +175,7 @@ void delete_name_list(t_connected *client) {
 void send_all_j(t_connected *client) {
 	char buf[BUF_SIZE];
 
-	sprintf(buf, "LOBBY : %s entered in the server\n", client->name);
+	sprintf(buf, "\033[34mLOBBY : %s entered in the server\033[0m\n", client->name);
 	pthread_mutex_lock(client->mutex_list->s_a);
 	for (int i = 0; i < client->server->clnt_cnt; i++) {
 		write(client->server->clnt_socks[i], buf, strlen(buf));
