@@ -24,7 +24,29 @@ typedef enum e_order {
 	IGNORE
 } t_order;
 
-char **ft_split(char *s, char c);
+typedef struct s_mlx {
+	void *mlx;
+	void *win;
+	void *img;
+	char *addr;
+	int bpp;
+	int size_line;
+	int endian;
+} t_mlx;
 
+typedef struct s_sockinfo {
+	int sock;
+	pthread_mutex_t *game_mutex;
+	int game_started;
+	struct sockaddr_in serv_addr;
+	int game_sock;
+	struct sockaddr_in game_addr;
+	t_mlx *mlx;
+
+	int *loop;
+} t_sockinfo;
+
+char **ft_split(char *s, char c);
+void *game(void *arg);
 
 #endif

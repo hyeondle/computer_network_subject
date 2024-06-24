@@ -54,6 +54,19 @@ int parser(char *msg, char **text) {
 		return -1;
 	}
 
+	if (return_value == GAME) {
+		printf("PARSER :: GAME\n");
+		*text = strdup(tokenized[1]);
+		for (int i = 0; tokenized[i]; i++) {
+			tokenized[i] = NULL;
+			free(tokenized[i]);
+		}
+		tokenized = NULL;
+		free(tokenized);
+		memset(msg, 0, BUF_SIZE);
+		return return_value;
+	}
+
 	for (int i = 1; tokenized[i]; i++) {
 		str_len += strlen(tokenized[i]);
 		str_len++;
@@ -108,6 +121,18 @@ int dup_check(t_connected *client) {
 	}
 	pthread_mutex_unlock(client->mutex_list->map);
 	return 0;
+}
+
+int find_name_list(t_map *list, char *name) {
+	t_map *temp;
+
+	temp = list;
+	for (int i = 0; i < MAX_CLNT; i++) {
+		if (temp[i].key != NULL && strcmp(temp[i].key, name) == 0) {
+			return temp[i].value;
+		}
+	}
+	return -1;
 }
 
 void add_name_list(t_connected *client) {

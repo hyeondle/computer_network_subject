@@ -69,5 +69,33 @@ t_server *init_server(char **argv) {
 	server->clnt_cnt = 0;
 	server->clnt_addr_size = sizeof(server->clnt_addr);
 
+
+	int game_port = atoi(argv[1]) + 1;
+
+    server->game_sock = socket(PF_INET, SOCK_STREAM, 0);
+    if (server->game_sock == -1) {
+        perror("socket");
+        exit(1);
+    }
+
+	setsockopt(server->game_sock, IPPROTO_TCP, TCP_NODELAY, (void *)&flag, sizeof(int));
+
+    setsockopt(server->game_sock, IPPROTO_TCP, TCP_NODELAY, (void *)&flag, sizeof(int));
+
+    memset(&server->game_addr, 0, sizeof(server->game_addr));
+    server->game_addr.sin_family = AF_INET;
+    server->game_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    server->game_addr.sin_port = htons(game_port);
+
+    if (bind(server->game_sock, (struct sockaddr *)&server->game_addr, sizeof(server->game_addr)) == -1) {
+        perror("bind");
+        exit(1);
+    }
+
+    if (listen(server->game_sock, 5) == -1) {
+        perror("listen");
+        exit(1);
+    }
+
 	return server;
 }
