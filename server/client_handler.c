@@ -16,8 +16,8 @@ void *handle_clnt(void *arg) {
 	sock = client->clnt_sock;
 	client_cnt = client->clnt_cnt;
 
-	int flag = 1;
-	setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&flag, sizeof(int));
+	// int flag = 1;
+	// setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&flag, sizeof(int));
 
 	// connection, name check
 	sprintf(msg, "SERVER :: Connect\n");
@@ -41,17 +41,10 @@ void *handle_clnt(void *arg) {
 	memset(msg, 0, BUF_SIZE);
 
 	send_all_j(client);
-
-	pthread_mutex_lock(client->mutex_list->map);
-	t_map *list = client->server->list;
-	for (int i = 0; i < MAX_CLNT; i++) {
-		printf("list[%d] : %s\n", i, list[i].key);
-	}
-	pthread_mutex_unlock(client->mutex_list->map);
-
 	// main operation
 	while(1) {
 		str_len = read(sock, msg, BUF_SIZE);
+		msg[strcspn(msg, "\n")] = '\0';
 		if (str_len == 0) {
 			break;
 		}
@@ -89,17 +82,26 @@ void *handle_clnt(void *arg) {
 	return 0;
 }
 
+void send_not_implemented(t_connected *client) {
+	char msg[BUF_SIZE];
+
+	sprintf(msg, "SERVER :: Not implemented operation\n");
+	write(client->clnt_sock, msg, strlen(msg));
+}
+
 void operate_order(t_connected *client, int order, char *text) {
 	switch (order) {
-		case LOBBY:
+		case WALL:
 			send_all(client, text);
-			break;
-		case EXIT:
 			break;
 		case WHISPER:
 			whisper(client, text);
 			break;
-		default:
+		case IGNORE:
 			break;
+		case GAME:
+			break;
+		default:
+			send_not_implemented(client);
 	}
 }
