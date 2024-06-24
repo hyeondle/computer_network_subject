@@ -1,4 +1,6 @@
 #include "client.h"
+#include "./mlx/mlx.h"
+#include <pthread.h>
 
 void * send_msg(void * arg);
 void * recv_msg(void * arg);
@@ -7,12 +9,16 @@ void error_handling(char * msg);
 char name[NAME_SIZE]="[DEFAULT]";
 // char msg[BUF_SIZE];
 
+
+
 int main(int argc, char *argv[])
 {
     int sock;
     struct sockaddr_in serv_addr;
+    struct sockaddr_in game_addr;
     pthread_t snd_thread, rcv_thread;
     void * thread_return;
+    t_sockinfo *sockinfo;
 
     char msg[BUF_SIZE];
     char chk[BUF_SIZE];
@@ -34,8 +40,41 @@ int main(int argc, char *argv[])
     if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr))==-1)
         error_handling("connect() error");
 
-    // int flag = 1;
-	// setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (void *)&flag, sizeof(int));
+    sockinfo = (t_sockinfo *)malloc(sizeof(t_sockinfo));
+    if (!sockinfo) {
+        perror("malloc");
+        exit(1);
+    }
+
+    sockinfo->loop = (int *)malloc(sizeof(int));
+    *(sockinfo->loop) = 0;
+
+    sockinfo->sock = sock;
+    sockinfo->serv_addr = serv_addr;
+    sockinfo->game_started = 0;
+    sockinfo->game_sock = socket(PF_INET, SOCK_STREAM, 0);
+    sockinfo->game_mutex = (pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
+    if (!sockinfo->game_mutex) {
+        perror("malloc");
+        exit(1);
+    }
+    pthread_mutex_init(sockinfo->game_mutex, NULL);
+
+    memset(&game_addr, 0, sizeof(game_addr));
+    game_addr.sin_family = AF_INET;
+    game_addr.sin_addr.s_addr = inet_addr(argv[1]);
+    game_addr.sin_port = htons(atoi(argv[2]) + 1);
+
+    sockinfo->game_addr = game_addr;
+
+    sockinfo->mlx = (t_mlx *)malloc(sizeof(t_mlx));
+    if (!sockinfo->mlx) {
+        perror("malloc");
+        exit(1);
+    }
+
+    int flag = 1;
+	setsockopt(sockinfo->game_sock, IPPROTO_TCP, TCP_NODELAY, (void *)&flag, sizeof(int));
 
     memset(msg, 0, BUF_SIZE);
 
@@ -57,7 +96,30 @@ int main(int argc, char *argv[])
 
     printf("Connected to server\n");
     pthread_create(&snd_thread, NULL, send_msg, (void*)&sock);
-    pthread_create(&rcv_thread, NULL, recv_msg, (void*)&sock);
+    pthread_create(&rcv_thread, NULL, recv_msg, (void*)sockinfo);
+
+    pthread_mutex_lock(sockinfo->game_mutex);
+    while (!sockinfo->game_started) {
+        pthread_mutex_unlock(sockinfo->game_mutex);
+        usleep(10000); // 10ms 대기
+        pthread_mutex_lock(sockinfo->game_mutex);
+    }
+    pthread_mutex_unlock(sockinfo->game_mutex);
+
+    sockinfo->mlx->mlx = mlx_init();
+    sockinfo->mlx->win = mlx_new_window(sockinfo->mlx->mlx, 1280, 720, "Pong");
+    sockinfo->mlx->img = mlx_new_image(sockinfo->mlx->mlx, 1280, 720);
+    sockinfo->mlx->addr = mlx_get_data_addr(sockinfo->mlx->img, &sockinfo->mlx->bpp, &sockinfo->mlx->size_line, &sockinfo->mlx->endian);
+
+    pthread_mutex_lock(sockinfo->game_mutex);
+    sockinfo->game_started = 0;
+    pthread_mutex_unlock(sockinfo->game_mutex);
+
+
+    // mlx_key_hook(game.win, key_press, &game);
+    // mlx_loop_hook(game.mlx, render_next_frame, &game);
+    mlx_loop(sockinfo->mlx->mlx);
+
     pthread_join(snd_thread, &thread_return);
     pthread_join(rcv_thread, &thread_return);
     close(sock);
@@ -224,8 +286,9 @@ void * send_msg(void * arg)   // send thread main
 
 void * recv_msg(void * arg)   // read thread main
 {
-
-    int sock=*((int*)arg);
+    pthread_t game_thread;
+    t_sockinfo *sockinfo = (t_sockinfo *)arg;
+    int sock = sockinfo->sock;
     char name_msg[NAME_SIZE+BUF_SIZE];
     int str_len;
     while(1)
@@ -237,6 +300,18 @@ void * recv_msg(void * arg)   // read thread main
         name_msg[strcspn(name_msg, "\n")] = '\0';
         write(1, name_msg, strlen(name_msg));
         write(1, "\n", 1);
+        if (strcmp(name_msg, "GAME START") == 0) {
+            pthread_create(&game_thread, NULL, game, (void*)sockinfo);
+            pthread_detach(game_thread);
+        } else if (strcmp(name_msg, "GAME REQUEST") == 0) {
+            printf("GAME REQUEST\n");
+            pthread_create(&game_thread, NULL, game, (void*)sockinfo);
+            pthread_detach(game_thread);
+        } else if (strcmp(name_msg, "GAME END") == 0) {
+            pthread_mutex_lock(sockinfo->game_mutex);
+            sockinfo->game_started = -1;
+            pthread_mutex_unlock(sockinfo->game_mutex);
+        }
     }
     return NULL;
 }

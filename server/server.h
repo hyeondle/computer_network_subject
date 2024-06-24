@@ -42,6 +42,9 @@ typedef struct s_server {
     int clnt_socks[MAX_CLNT];
     int clnt_addr_size;
 
+    int game_sock;
+    struct sockaddr_in game_addr;
+
     t_map *list;
 }   t_server;
 
@@ -80,6 +83,7 @@ void *handle_clnt(void *arg);
 // operations
 //
 void whisper(t_connected *client, char *text);
+void game(t_connected *client, char *text);
 
 //
 // utils.c
@@ -88,6 +92,7 @@ int parser(char *msg, char **text);
 int find_order(char *order);
 void add_name_list(t_connected *client);
 void delete_name_list(t_connected *client);
+int find_name_list(t_map *list, char *name);
 int dup_check(t_connected *client);
 void send_all(t_connected *client, char *msg);
 void send_all_j(t_connected *client);
