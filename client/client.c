@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 
     // mlx_key_hook(game.win, key_press, &game);
     // mlx_loop_hook(game.mlx, render_next_frame, &game);
-    mlx_loop(sockinfo->mlx->mlx);
+    // mlx_loop(sockinfo->mlx->mlx);
 
     pthread_join(snd_thread, &thread_return);
     pthread_join(rcv_thread, &thread_return);
