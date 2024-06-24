@@ -1,5 +1,4 @@
 #include "client.h"
-#include "./mlx/mlx.h"
 #include <pthread.h>
 
 void * send_msg(void * arg);
@@ -8,8 +7,6 @@ void error_handling(char * msg);
 
 char name[NAME_SIZE]="[DEFAULT]";
 // char msg[BUF_SIZE];
-
-
 
 int main(int argc, char *argv[])
 {
@@ -97,29 +94,6 @@ int main(int argc, char *argv[])
     printf("Connected to server\n");
     pthread_create(&snd_thread, NULL, send_msg, (void*)&sock);
     pthread_create(&rcv_thread, NULL, recv_msg, (void*)sockinfo);
-
-    pthread_mutex_lock(sockinfo->game_mutex);
-    while (!sockinfo->game_started) {
-        pthread_mutex_unlock(sockinfo->game_mutex);
-        usleep(10000); // 10ms 대기
-        pthread_mutex_lock(sockinfo->game_mutex);
-    }
-    pthread_mutex_unlock(sockinfo->game_mutex);
-
-    sockinfo->mlx->mlx = mlx_init();
-    sockinfo->mlx->win = mlx_new_window(sockinfo->mlx->mlx, 1280, 720, "Pong");
-    sockinfo->mlx->img = mlx_new_image(sockinfo->mlx->mlx, 1280, 720);
-    sockinfo->mlx->addr = mlx_get_data_addr(sockinfo->mlx->img, &sockinfo->mlx->bpp, &sockinfo->mlx->size_line, &sockinfo->mlx->endian);
-
-    pthread_mutex_lock(sockinfo->game_mutex);
-    sockinfo->game_started = 0;
-    pthread_mutex_unlock(sockinfo->game_mutex);
-
-
-    // mlx_key_hook(game.win, key_press, &game);
-    // mlx_loop_hook(game.mlx, render_next_frame, &game);
-    // mlx_loop(sockinfo->mlx->mlx);
-
     pthread_join(snd_thread, &thread_return);
     pthread_join(rcv_thread, &thread_return);
     close(sock);
@@ -301,12 +275,18 @@ void * recv_msg(void * arg)   // read thread main
         write(1, name_msg, strlen(name_msg));
         write(1, "\n", 1);
         if (strcmp(name_msg, "GAME START") == 0) {
-            pthread_create(&game_thread, NULL, game, (void*)sockinfo);
-            pthread_detach(game_thread);
+            // pthread_create(&game_thread, NULL, game, (void*)sockinfo);
+            // pthread_detach(game_thread);
+            pthread_mutex_lock(sockinfo->game_mutex);
+            sockinfo->game_started = 1;
+            pthread_mutex_unlock(sockinfo->game_mutex);
         } else if (strcmp(name_msg, "GAME REQUEST") == 0) {
             printf("GAME REQUEST\n");
-            pthread_create(&game_thread, NULL, game, (void*)sockinfo);
-            pthread_detach(game_thread);
+            // pthread_create(&game_thread, NULL, game, (void*)sockinfo);
+            // pthread_detach(game_thread);
+            pthread_mutex_lock(sockinfo->game_mutex);
+            sockinfo->game_started = 1;
+            pthread_mutex_unlock(sockinfo->game_mutex);
         } else if (strcmp(name_msg, "GAME END") == 0) {
             pthread_mutex_lock(sockinfo->game_mutex);
             sockinfo->game_started = -1;

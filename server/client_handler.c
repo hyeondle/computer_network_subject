@@ -99,9 +99,9 @@ void operate_order(t_connected *client, int order, char *text) {
 			break;
 		case IGNORE:
 			break;
-		case GAME:
-			game(client, text);
-			break;
+		// case GAME:
+			// game(client, text);
+			// break;
 		default:
 			send_not_implemented(client);
 	}
